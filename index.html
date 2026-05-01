@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>إيهاب تِك | مساعد الأعطال الذكي</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root { --primary: #2c3e50; --accent: #3498db; --bg: #f4f7f6; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg); margin: 0; color: #333; }
+        .header { background: var(--primary); color: white; padding: 20px; text-align: center; border-bottom: 5px solid var(--accent); }
+        .container { padding: 15px; max-width: 600px; margin: auto; }
+        .card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin-bottom: 20px; text-align: center; }
+        .btn { border: none; padding: 15px; border-radius: 10px; width: 100%; cursor: pointer; font-weight: bold; font-size: 16px; transition: 0.3s; margin-top: 10px; }
+        .btn-upload { background: #27ae60; color: white; }
+        .btn-ai { background: #e67e22; color: white; display: none; }
+        #preview { width: 100%; border-radius: 10px; display: none; margin-top: 15px; border: 2px solid #ddd; }
+        #response { display: none; background: #fff; padding: 15px; border-radius: 10px; margin-top: 20px; border-right: 5px solid var(--accent); line-height: 1.8; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .history-section { margin-top: 30px; }
+        .history-item { background: white; padding: 12px; border-radius: 8px; margin-top: 10px; border-right: 4px solid #95a5a6; font-size: 14px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .loader { display: none; margin: 20px 0; font-weight: bold; color: var(--accent); }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <h1><i class="fas fa-tools"></i> إيهاب تِك</h1>
+    <p>مساعد الأعطال الذكي لمكاتب البريد</p>
+</div>
+
+<div class="container">
+    <div class="card">
+        <p>قم بتصوير لوحة مفاتيح الجهاز، شاشة الخطأ، أو موديل الطابعة</p>
+        <label class="btn btn-upload">
+            <i class="fas fa-camera"></i> تصوير العطل / اختيار صورة
+            <input type="file" id="imgInput" accept="image/*" hidden onchange="previewImg(this)">
+        </label>
+        <img id="preview" alt="معاينة العطل">
+        
+        <button id="runBtn" class="btn btn-ai" onclick="analyzeFault()">
+            <i class="fas fa-magic"></i> استخراج حل "الزتونة"
+        </button>
+        
+        <div id="loader" class="loader">
+            <i class="fas fa-spinner fa-spin"></i> جاري استشارة الخبير الذكي...
+        </div>
+    </div>
+
+    <div id="response"></div>
+
+    <div class="history-section">
+        <h3><i class="fas fa-history"></i> سجل الأعطال الأخير (مزامنة فورية)</h3>
+        <div id="archive"></div>
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getFirestore, collection, addDoc, query, orderBy, limit, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+    // بياناتك الخاصة اللي استخرجناها سوا
+    const firebaseConfig = {
+      apiKey: "AIzaSyAurCce7qDztc9J2WGOS75QThpIJlMovkA",
+      authDomain: "ehabtech-60ae6.firebaseapp.com",
+      projectId: "ehabtech-60ae6",
+      storageBucket: "ehabtech-60ae6.firebasestorage.app",
+      messagingSenderId: "142492396196",
+      appId: "1:142492396196:web:6c7fe8877fbdd7f6c69431"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // تحديث السجل لحظياً من Firestore
+    const q = query(collection(db, "faults"), orderBy("timestamp", "desc"), limit(5));
+    onSnapshot(q, (snapshot) => {
+        const archive = document.getElementById('archive');
+        archive.innerHTML = '';
+        snapshot.forEach(doc => {
+            const item = doc.data();
+            archive.innerHTML += `
+                <div class="history-item">
+                    <strong>الجهاز: ${item.device}</strong><br>
+                    <span>${item.solution.substring(0, 80)}...</span><br>
+                    <small style="color:#888">${new Date(item.timestamp.toDate()).toLocaleString('ar-EG')}</small>
+                </div>`;
+        });
+    });
+
+    window.saveFault = async (device, solution) => {
+        try {
+            await addDoc(collection(db, "faults"), {
+                device: device,
+                solution: solution,
+                timestamp: new Date()
+            });
+        } catch (e) { console.error("Error saving to Firebase: ", e); }
+    };
+</script>
+
+<script>
+    let imgBase64 = "";
+
+    function previewImg(input) {
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            reader.onload = e => {
+                imgBase64 = e.target.result.split(',')[1];
+                document.getElementById('preview').src = e.target.result;
+                document.getElementById('preview').style.display = 'block';
+                document.getElementById('runBtn').style.display = 'block';
+            };
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+
+    async function analyzeFault() {
+        const apiKey = localStorage.getItem('gemini_key') || prompt("أدخل مفتاح Gemini API للاستمرار (مرة واحدة فقط):");
+        if (!apiKey) return;
+        localStorage.setItem('gemini_key', apiKey);
+
+        const loader = document.getElementById('loader');
+        const resp = document.getElementById('response');
+        
+        loader.style.display = 'block';
+        resp.style.display = 'none';
+
+        try {
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+            const response = await fetch(url, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    contents: [{ parts: [
+                        { text: "أنت مهندس دعم فني خبير بمكاتب البريد المصرية. حلل صورة العطل، حدد الموديل، واشرح الحل بالعامية المصرية التقنية بأسلوب 'الزتونة'. ابدأ الرد باسم الجهاز فقط في أول سطر." },
+                        { inline_data: { mime_type: "image/jpeg", data: imgBase64 } }
+                    ]}]
+                })
+            });
+
+            const data = await response.json();
+            const text = data.candidates[0].content.parts[0].text;
+            
+            resp.innerHTML = `<strong>تشخيص إيهاب تِك:</strong><br>${text.replace(/\n/g, '<br>')}`;
+            resp.style.display = 'block';
+
+            const deviceName = text.split('\n')[0] || "جهاز غير معروف";
+            window.saveFault(deviceName, text);
+
+        } catch (err) {
+            alert("حدث خطأ في الاتصال بالذكاء الاصطناعي. تأكد من الـ API Key.");
+        } finally {
+            loader.style.display = 'none';
+        }
+    }
+</script>
+</body>
+</html>
