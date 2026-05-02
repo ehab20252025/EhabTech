@@ -49,7 +49,7 @@
 <script>
     let imgBase64 = "";
     
-    // ضع مفتاح الـ API الجديد الذي حصلت عليه من الإيميل الجديد هنا
+    // ضع مفتاح الـ API الجديد من الإيميل الجديد بين علامات التنصيص هنا
     const FINAL_API_KEY = "AIzaSyDQQdwHq7SntCbwiCJ6eueTP1dmATIYQyM"; 
 
     function previewImg(input) {
@@ -72,8 +72,8 @@
         resp.style.display = 'none';
 
         try {
-            // التعديل هنا: استخدام النسخة المستقرة v1 مع موديل 1.5-flash لضمان العمل على الحسابات الجديدة
-            const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${FINAL_API_KEY}`;
+            // استخدام v1beta مع gemini-1.5-flash لضمان التوافق التام مع الحساب الجديد
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${FINAL_API_KEY}`;
             
             const requestBody = {
                 contents: [{
