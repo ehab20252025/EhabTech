@@ -30,7 +30,7 @@
 
 <div class="container">
     <div class="card">
-        <p>قم بتصوير لوحة مفاتيح الجهاز، شاشة الخطأ، أو موديل الطابعة</p>
+        <p>قم بتصوير العطل أو موديل الجهاز</p>
         <label class="btn btn-upload">
             <i class="fas fa-camera"></i> تصوير العطل / اختيار صورة
             <input type="file" id="imgInput" accept="image/*" hidden onchange="previewImg(this)">
@@ -49,7 +49,7 @@
     <div id="response"></div>
 
     <div class="history-section">
-        <h3><i class="fas fa-history"></i> سجل الأعطال الأخير (مزامنة فورية)</h3>
+        <h3><i class="fas fa-history"></i> سجل الأعطال (مزامنة Firebase)</h3>
         <div id="archive"></div>
     </div>
 </div>
@@ -58,7 +58,6 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { getFirestore, collection, addDoc, query, orderBy, limit, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-    // بياناتك الخاصة اللي استخرجناها سوا
     const firebaseConfig = {
       apiKey: "AIzaSyAurCce7qDztc9J2WGOS75QThpIJlMovkA",
       authDomain: "ehabtech-60ae6.firebaseapp.com",
@@ -71,7 +70,6 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    // تحديث السجل لحظياً من Firestore
     const q = query(collection(db, "faults"), orderBy("timestamp", "desc"), limit(5));
     onSnapshot(q, (snapshot) => {
         const archive = document.getElementById('archive');
@@ -94,12 +92,14 @@
                 solution: solution,
                 timestamp: new Date()
             });
-        } catch (e) { console.error("Error saving to Firebase: ", e); }
+        } catch (e) { console.error("Error saving: ", e); }
     };
 </script>
 
 <script>
     let imgBase64 = "";
+    // المتاح الجديد بتاعك مدمج هنا مباشرة لضمان العمل
+    const MY_GEMINI_KEY = "AIzaSyAurCce7qDztc9J2WGOS75QThpIJlMovkA"; 
 
     function previewImg(input) {
         if (input.files && input.files[0]) {
@@ -115,18 +115,13 @@
     }
 
     async function analyzeFault() {
-        const apiKey = localStorage.getItem('gemini_key') || prompt("أدخل مفتاح Gemini API للاستمرار (مرة واحدة فقط):");
-        if (!apiKey) return;
-        localStorage.setItem('gemini_key', apiKey);
-
         const loader = document.getElementById('loader');
         const resp = document.getElementById('response');
-        
         loader.style.display = 'block';
         resp.style.display = 'none';
 
         try {
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${MY_GEMINI_KEY}`;
             const response = await fetch(url, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -139,8 +134,12 @@
             });
 
             const data = await response.json();
-            const text = data.candidates[0].content.parts[0].text;
             
+            if (data.error) {
+                throw new Error(data.error.message);
+            }
+
+            const text = data.candidates[0].content.parts[0].text;
             resp.innerHTML = `<strong>تشخيص إيهاب تِك:</strong><br>${text.replace(/\n/g, '<br>')}`;
             resp.style.display = 'block';
 
@@ -148,7 +147,8 @@
             window.saveFault(deviceName, text);
 
         } catch (err) {
-            alert("حدث خطأ في الاتصال بالذكاء الاصطناعي. تأكد من الـ API Key.");
+            console.error(err);
+            alert("حدث خطأ: " + err.message);
         } finally {
             loader.style.display = 'none';
         }
