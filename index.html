@@ -16,8 +16,6 @@
         .btn-ai { background: #e67e22; color: white; display: none; }
         #preview { width: 100%; border-radius: 10px; display: none; margin-top: 15px; border: 2px solid #ddd; }
         #response { display: none; background: #fff; padding: 15px; border-radius: 10px; margin-top: 20px; border-right: 5px solid var(--accent); line-height: 1.8; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-        .history-section { margin-top: 30px; }
-        .history-item { background: white; padding: 12px; border-radius: 8px; margin-top: 10px; border-right: 4px solid #95a5a6; font-size: 14px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
         .loader { display: none; margin: 20px 0; font-weight: bold; color: var(--accent); }
     </style>
 </head>
@@ -25,17 +23,17 @@
 
 <div class="header">
     <h1><i class="fas fa-tools"></i> إيهاب تِك</h1>
-    <p>مساعد الأعطال الذكي لمكاتب البريد</p>
+    <p>مساعد الأعطال الذكي - نسخة الدعم الفني</p>
 </div>
 
 <div class="container">
     <div class="card">
-        <p>قم بتصوير العطل أو موديل الجهاز</p>
+        <p>ارفع صورة العطل أو موديل الجهاز</p>
         <label class="btn btn-upload">
             <i class="fas fa-camera"></i> تصوير العطل / اختيار صورة
             <input type="file" id="imgInput" accept="image/*" hidden onchange="previewImg(this)">
         </label>
-        <img id="preview" alt="معاينة العطل">
+        <img id="preview">
         
         <button id="runBtn" class="btn btn-ai" onclick="analyzeFault()">
             <i class="fas fa-magic"></i> استخراج حل "الزتونة"
@@ -45,61 +43,13 @@
             <i class="fas fa-spinner fa-spin"></i> جاري استشارة الخبير الذكي...
         </div>
     </div>
-
     <div id="response"></div>
-
-    <div class="history-section">
-        <h3><i class="fas fa-history"></i> سجل الأعطال (مزامنة Firebase)</h3>
-        <div id="archive"></div>
-    </div>
 </div>
-
-<script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getFirestore, collection, addDoc, query, orderBy, limit, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-
-    const firebaseConfig = {
-      apiKey: "AIzaSyAurCce7qDztc9J2WGOS75QThpIJlMovkA",
-      authDomain: "ehabtech-60ae6.firebaseapp.com",
-      projectId: "ehabtech-60ae6",
-      storageBucket: "ehabtech-60ae6.firebasestorage.app",
-      messagingSenderId: "142492396196",
-      appId: "1:142492396196:web:6c7fe8877fbdd7f6c69431"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-
-    const q = query(collection(db, "faults"), orderBy("timestamp", "desc"), limit(5));
-    onSnapshot(q, (snapshot) => {
-        const archive = document.getElementById('archive');
-        archive.innerHTML = '';
-        snapshot.forEach(doc => {
-            const item = doc.data();
-            archive.innerHTML += `
-                <div class="history-item">
-                    <strong>الجهاز: ${item.device}</strong><br>
-                    <span>${item.solution.substring(0, 80)}...</span><br>
-                    <small style="color:#888">${new Date(item.timestamp.toDate()).toLocaleString('ar-EG')}</small>
-                </div>`;
-        });
-    });
-
-    window.saveFault = async (device, solution) => {
-        try {
-            await addDoc(collection(db, "faults"), {
-                device: device,
-                solution: solution,
-                timestamp: new Date()
-            });
-        } catch (e) { console.error("Error saving: ", e); }
-    };
-</script>
 
 <script>
     let imgBase64 = "";
-    // المتاح الجديد بتاعك مدمج هنا مباشرة لضمان العمل
-    const MY_GEMINI_KEY = "AIzaSyAurCce7qDztc9J2WGOS75QThpIJlMovkA"; 
+    // المفتاح اللي جربناه واشتغل في الاستوديو
+    const FINAL_API_KEY = "AIzaSyAurCce7qDztc9J2WGOS75QThpIJlMovkA"; 
 
     function previewImg(input) {
         if (input.files && input.files[0]) {
@@ -121,34 +71,38 @@
         resp.style.display = 'none';
 
         try {
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${MY_GEMINI_KEY}`;
+            // استخدمنا هنا النسخة المستقرة gemini-1.5-flash لضمان العمل
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${FINAL_API_KEY}`;
+            
+            const requestBody = {
+                contents: [{
+                    parts: [
+                        { text: "أنت مهندس دعم فني خبير بمكاتب البريد المصرية. حلل الصورة، حدد الجهاز، واشرح الحل بالعامية المصرية بأسلوب الزتونة." },
+                        { inline_data: { mime_type: "image/jpeg", data: imgBase64 } }
+                    ]
+                }]
+            };
+
             const response = await fetch(url, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    contents: [{ parts: [
-                        { text: "أنت مهندس دعم فني خبير بمكاتب البريد المصرية. حلل صورة العطل، حدد الموديل، واشرح الحل بالعامية المصرية التقنية بأسلوب 'الزتونة'. ابدأ الرد باسم الجهاز فقط في أول سطر." },
-                        { inline_data: { mime_type: "image/jpeg", data: imgBase64 } }
-                    ]}]
-                })
+                body: JSON.stringify(requestBody)
             });
 
             const data = await response.json();
-            
+
             if (data.error) {
+                // لو جوجل رفضت الطلب، هنعرف السبب الحقيقي هنا
                 throw new Error(data.error.message);
             }
 
-            const text = data.candidates[0].content.parts[0].text;
-            resp.innerHTML = `<strong>تشخيص إيهاب تِك:</strong><br>${text.replace(/\n/g, '<br>')}`;
+            const resultText = data.candidates[0].content.parts[0].text;
+            resp.innerHTML = `<strong>تشخيص إيهاب تِك:</strong><br>${resultText.replace(/\n/g, '<br>')}`;
             resp.style.display = 'block';
-
-            const deviceName = text.split('\n')[0] || "جهاز غير معروف";
-            window.saveFault(deviceName, text);
 
         } catch (err) {
             console.error(err);
-            alert("حدث خطأ: " + err.message);
+            alert("تنبيه: " + err.message);
         } finally {
             loader.style.display = 'none';
         }
