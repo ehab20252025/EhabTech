@@ -48,8 +48,7 @@
 
 <script>
     let imgBase64 = "";
-    
-    // ضع مفتاح الـ API الجديد من الإيميل الجديد هنا
+    // حط مفتاح الـ API الجديد هنا
     const FINAL_API_KEY = "AIzaSyDQQdwHq7SntCbwiCJ6eueTP1dmATIYQyM"; 
 
     function previewImg(input) {
@@ -72,8 +71,8 @@
         resp.style.display = 'none';
 
         try {
-            // استخدام v1 المستقرة مع gemini-1.5-flash هو الحل المضمون حالياً
-            const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${FINAL_API_KEY}`;
+            // التعديل: استخدام v1beta مع gemini-1.5-flash (الاسم الخام)
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${FINAL_API_KEY}`;
             
             const requestBody = {
                 contents: [{
@@ -94,10 +93,6 @@
 
             if (data.error) {
                 throw new Error(data.error.message);
-            }
-
-            if (!data.candidates || data.candidates.length === 0) {
-                throw new Error("لم يتمكن الذكاء الاصطناعي من تحليل الصورة، جرب صورة أوضح.");
             }
 
             const resultText = data.candidates[0].content.parts[0].text;
