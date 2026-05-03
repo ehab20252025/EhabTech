@@ -48,7 +48,7 @@
 
 <script>
     let imgBase64 = "";
-    // ضع مفتاح الـ API الجديد هنا
+    // حط مفتاح الـ API الجديد هنا
     const FINAL_API_KEY = "AIzaSyDQQdwHq7SntCbwiCJ6eueTP1dmATIYQyM"; 
 
     function previewImg(input) {
@@ -71,8 +71,8 @@
         resp.style.display = 'none';
 
         try {
-            // "الزتونة": استخدام v1beta مع gemini-1.5-flash-latest لضمان التشغيل
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${FINAL_API_KEY}`;
+            // استخدام gemini-pro-vision لضمان أقصى توافق مع تحليل الصور
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro-vision:generateContent?key=${FINAL_API_KEY}`;
             
             const requestBody = {
                 contents: [{
