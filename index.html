@@ -71,8 +71,8 @@
         resp.style.display = 'none';
 
         try {
-            // التعديل: استخدام v1 المستقرة مع موديل flash-latest لضمان العمل
-            const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${FINAL_API_KEY}`;
+            // "الزتونة": استخدام v1beta مع gemini-1.5-flash-latest لضمان التشغيل
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${FINAL_API_KEY}`;
             
             const requestBody = {
                 contents: [{
