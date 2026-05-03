@@ -48,6 +48,7 @@
 
 <script>
     let imgBase64 = "";
+    // حط مفتاح الـ API الجديد هنا
     const FINAL_API_KEY = "AIzaSyDQQdwHq7SntCbwiCJ6eueTP1dmATIYQyM"; 
 
     function previewImg(input) {
@@ -70,8 +71,8 @@
         resp.style.display = 'none';
 
         try {
-            // التعديل الجوهري هنا: استخدام المسمى الرسمي المستقر v1
-            const url = `https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent?key=${FINAL_API_KEY}`;
+            // استخدام v1beta مع gemini-1.5-flash هو المزيج الأكثر توافقاً حالياً
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${FINAL_API_KEY}`;
             
             const requestBody = {
                 contents: [{
